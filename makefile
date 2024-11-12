@@ -7,7 +7,7 @@ OUT_DIR = out
 NAME = ROM
 
 CMAKE = cmake
-CMAKE_ASAR_GENERATOR = "Ninja"
+CMAKE_ASAR_GENERATOR := "Ninja"
 
 current_dir = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
@@ -55,7 +55,7 @@ ${ASAR_DIR}/src/asar/*:
 	wget -c "${ASAR_URL}" -O - | tar -xz --strip-components=1 -C "${ASAR_DIR}"
 
 ${ASAR_DIR}/asar/bin/${ASAR_EXECUTABLE}: ${ASAR_DIR}/src/asar/*
-	cd "${ASAR_DIR}" && ${CMAKE} src -G ${CMAKE_ASAR_GENERATOR} > /dev/null && ${CMAKE} --build .
+	cd "${ASAR_DIR}" && ${CMAKE} src -G "${CMAKE_ASAR_GENERATOR}" > /dev/null && ${CMAKE} --build .
 
 .PHONY: clean asar ${NAME} build debug rm_asar force_update_asar
 .SILENT: build asar

@@ -1,7 +1,7 @@
 .vscode
 .vs
 
-bin
+out
 tmp
 tools
 

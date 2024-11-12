@@ -9,8 +9,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # - name: Get dependency packages
+        # run: sudo apt update && sudo apt install ninja-build
       - name: Get asar
-        run: make asar
+        run: make asar CMAKE_ASAR_GENERATOR="Unix Makefiles"
       - name: Build ROM
         run: make build
       - name: Upload artifacts
