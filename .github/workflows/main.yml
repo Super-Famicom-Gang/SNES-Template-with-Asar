@@ -1,0 +1,20 @@
+name: Build ROM
+
+on: [push]
+
+jobs:
+  build_rom:
+    runs-on: ubuntu-latest
+    name: Compile ROM
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get asar
+        run: make asar
+      - name: Build ROM
+        run: make build
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ROM.zip
+          path: out/*
