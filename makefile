@@ -38,7 +38,7 @@ rm_asar: ${ASAR_DIR}
 	rm -rf ${ASAR_DIR}
 
 ${OUT_DIR}/${NAME}.sfc: asar ${OUT_DIR} ${SRC_DIR}/*
-	${ASAR_DIR}/asar/bin/${ASAR_EXECUTABLE} -v --symbols=${SYM} -I"${OUT_DIR}" -I"${TMP_DIR}" -I"${SRC_DIR}" --fix-checksum=on "${SRC_DIR}/main.asm" "${OUT_DIR}/${NAME}.sfc"
+	${ASAR_DIR}/asar/bin/${ASAR_EXECUTABLE} -v --symbols=${SYM} -I"${OUT_DIR}" -I"${TMP_DIR}" -I"${SRC_DIR}" -I"${SRC_DIR}/lib" --fix-checksum=on "${SRC_DIR}/main.asm" "${OUT_DIR}/${NAME}.sfc"
 
 ${OUT_DIR}:
 	mkdir -p ${OUT_DIR}

@@ -1,4 +1,3 @@
-
 ;==== FRIENDLY HEADER BY alexmush ====;
 ; Game Title, encoded in JIS X 0201
 ; Must be 21 or less characters long
@@ -47,19 +46,19 @@
 ;
 ; |_If COPTYPE = 15 (Custom), then EXTCOPTYPE indicates the exact coprocessor:
 ; |_Value_|_Coprocessor_|
-; |___0___|_SPC()7110_____|
+; |___0___|_SPC7110_____|
 ; |___1___|_ST010/ST011_|
 ; |___2___|_ST018_______|
 ; |_*3/16_|_CX4_________|
 ; * Conflicting information from snesdev wiki and fullsnes respectively.
-!HEADER_CARTTYPE = 2
+!HEADER_CARTTYPE = 0
 !HEADER_COPTYPE = 0
 !HEADER_EXTCOPTYPE = 0
 
 ; ROM size
 ; Just write the ROM size in kibibytes here
 ; (This script automatically calculates the value in the header)
-!HEADER_ROMSIZE = 128
+!HEADER_ROMSIZE = 32
 
 ; RAM size
 ; Just write the SRAM size in kibibytes here
@@ -151,6 +150,36 @@
 
 ;=== Actually setting the header ===;
 
+; Get the mapping mode first
+if !HEADER_COPTYPE == 1		; SuperFX
+	sfxrom
+	!LOROM = 1
+elseif !HEADER_MAPMODE == 0	; LoROM
+	lorom
+	!LOROM = 1
+elseif !HEADER_MAPMODE == 1	; HiROM
+	hirom
+	!LOROM = 0
+elseif !HEADER_MAPMODE == 2	; LoROM + S-DD1
+	if !HEADER_COPTYPE != 4	; S-DD1
+		warn "You have set Mapping Mode 2 (LoROM + S-DD1) but you have not set the Co-Processor Type to 4 (S-DD1)"
+	endif
+	sa1rom
+	!LOROM = 1	; may be incorrect
+elseif !HEADER_MAPMODE == 3	; LoROM + SA-1
+	if !HEADER_COPTYPE != 3	; SA-1
+		warn "You have set Mapping Mode 3 (LoROM + SA-1) but you have not set the Co-Processor Type to 3 (SA-1)"
+	endif
+	sa1rom
+	!LOROM = 1	; may be incorrect
+elseif !HEADER_MAPMODE == 5	; ExHiROM
+	exhirom
+	!LOROM = 0
+elseif !HEADER_MAPMODE == 6	; ExLoROM
+	exlorom
+	!LOROM = 1
+endif
+
 macro __header_setDefault(macro, default)
 	if not(defined("<macro>")) : !HEADER_<macro> = <default> : endif
 endmacro
@@ -183,7 +212,7 @@ assert pc() == $00FFBF : %__header_setDefault(EXTCOPTYPE, 0) : db !HEADER_EXTCOP
 ; $C0-D4 : Game Title
 assert pc() == $00FFC0 : db "!HEADER_GAMETITLE" : %__header_padString($00FFD5)
 ; $D5    : Map Mode
-assert pc() == $00FFD5 : db !HEADER_MAPMODE
+assert pc() == $00FFD5 : db $20|(!HEADER_ROMSPEED<<4)|!HEADER_MAPMODE
 ; $D6    : Cartridge Type
 %__header_setDefault(COPTYPE, 0) : assert !HEADER_COPTYPE <= $0F : assert !HEADER_CARTTYPE <= $0F
 assert pc() == $00FFD6 : db (!HEADER_COPTYPE<<4)|!HEADER_CARTTYPE
