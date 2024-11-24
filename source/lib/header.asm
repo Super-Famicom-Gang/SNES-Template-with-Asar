@@ -157,27 +157,33 @@ if !HEADER_COPTYPE == 1		; SuperFX
 elseif !HEADER_MAPMODE == 0	; LoROM
 	lorom
 	!LOROM = 1
+	!EXROM = 0
 elseif !HEADER_MAPMODE == 1	; HiROM
 	hirom
 	!LOROM = 0
+	!EXROM = 0
 elseif !HEADER_MAPMODE == 2	; LoROM + S-DD1
 	if !HEADER_COPTYPE != 4	; S-DD1
 		warn "You have set Mapping Mode 2 (LoROM + S-DD1) but you have not set the Co-Processor Type to 4 (S-DD1)"
 	endif
 	sa1rom
 	!LOROM = 1	; may be incorrect
+	!EXROM = 0
 elseif !HEADER_MAPMODE == 3	; LoROM + SA-1
 	if !HEADER_COPTYPE != 3	; SA-1
 		warn "You have set Mapping Mode 3 (LoROM + SA-1) but you have not set the Co-Processor Type to 3 (SA-1)"
 	endif
 	sa1rom
 	!LOROM = 1	; may be incorrect
+	!EXROM = 0
 elseif !HEADER_MAPMODE == 5	; ExHiROM
 	exhirom
 	!LOROM = 0
+	!EXROM = 1
 elseif !HEADER_MAPMODE == 6	; ExLoROM
 	exlorom
 	!LOROM = 1
+	!EXROM = 1
 endif
 
 macro __header_setDefault(macro, default)

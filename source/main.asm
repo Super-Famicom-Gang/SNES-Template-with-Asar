@@ -5,7 +5,6 @@ incsrc "init.asm"
 %allocateRAM(0, ptr1, 2, ptr2, 2, ptr3, 2, ptr4, 2)
 
 
-; init.asm pushes PC, so to start coding in the bank 0, pull pc
 %codebank(0)
 
 NAT_COP_Routine:
@@ -13,8 +12,8 @@ NAT_BRK_Routine:
 EMU_COP_Routine:
 
 NAT_NMI_Routine:
-EMU_NMI_Routine:; init.asm pushes PC, so to start coding in the first bank, pull 
-	JSL	.fastROM		;
+EMU_NMI_Routine:
+	JML	.fastROM		;
 	org $800000|pc()	;	Move to FastROM
 	.fastROM:			;__
 	PHA	;

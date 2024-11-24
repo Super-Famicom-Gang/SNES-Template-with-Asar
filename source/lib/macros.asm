@@ -1,8 +1,3 @@
-; General macros
-macro exec(cmd)
-    <cmd>
-endmacro
-
 ; RAM allocation macros
 macro allocateRAM(page, ...)
 	pushpc
@@ -31,44 +26,42 @@ macro allocateRAM(page, ...)
 	pullpc
 endmacro
 
-macro var(name, size)
-	<name>: skip <size>
-endmacro
-
-macro byte(name)
-	<name>: skip 1
-endmacro
-
-macro word(name)
-	<name>: skip 2
-endmacro
-
-macro ptr(name)
-	<name>: skip 3
-endmacro
-
-macro long(name)
-	<name>: skip 4
-endmacro
-
 ; ROM allocation macros
 macro codebank(bank)
     ; First push the old PC
     if defined("CURRENT_BANK")
         !{ROM_LOCATION_!CURRENT_BANK} #= pc()
-    endif
 
-    !CURRENT_BANK #= <bank>
-    
-    ; Has the new bank ever had code?
-    if not(defined("ROM_LOCATION_<bank>"))
-        !ROM_LOCATION_<bank> #= (<bank><<16)
-        if <bank>&$40 == 0 || !LOROM > 0    ; If bank has ROM mirrors
-            !ROM_LOCATION_<bank> #= !ROM_LOCATION_<bank>|$8000
+        ; THIS CODE IS COMPLETELY UNTESTED!!!
+        if not(!LOROM) && !{CURRENT_BANK}&$40 != 0 \
+            && !{ROM_LOCATION_!CURRENT_BANK}&$FFFF > $8000
+            ; Check if the ROM's overflowed
+            !MIRROR_BANK #= !{CURRENT_BANK}&$BF
+            if defined("ROM_LOCATION_!{MIRROR_BANK}")
+                error "Bank !{CURRENT_BANK} has overflowed into !{MIRROR_BANK}"
+            else
+                !{ROM_LOCATION_!MIRROR_BANK} #= pc()
+            endif
         endif
     endif
 
+    !CURRENT_BANK #= <bank>
+
+    if not(!EXROM)
+        !{CURRENT_BANK} #= !{CURRENT_BANK}&$7F
+    endif
+    
+    ; Has the new bank ever had code?
+    if not(defined("ROM_LOCATION_!{CURRENT_BANK}"))
+        !{ROM_LOCATION_!CURRENT_BANK} #= (!{CURRENT_BANK}<<16)
+        if !CURRENT_BANK&$40 == 0 || !LOROM    ; If bank has ROM mirrors
+            !{ROM_LOCATION_!CURRENT_BANK} #= !{ROM_LOCATION_!CURRENT_BANK}|$8000
+        endif
+    elseif not(!LOROM) && !{ROM_LOCATION_!CURRENT_BANK}&$FFFF >= $8000
+        !{CURRENT_BANK} #= !{CURRENT_BANK}&$BF  ; If HiROM bank overflowed w/ no consequence, un$40 the bank
+    endif
+
     ; Finally, switch
-    org !ROM_LOCATION_<bank>
-    bank <bank>
+    org !{ROM_LOCATION_!CURRENT_BANK}
+    bank !{CURRENT_BANK}
 endmacro
