@@ -1,3 +1,14 @@
+; Additional math functions
+function lobyte(x) = x&$FF
+function hibyte(x) = lobyte(x>>8)
+function exbyte(x) = bank(x)
+
+function loword(x) = x&$FFFF
+function hiword(x) = loword(x>>16)
+
+function offs(x) = loword(x)
+function page(x) = hibyte(x)
+
 ; RAM allocation macros
 macro allocateRAM(page, ...)
 	pushpc
@@ -32,9 +43,13 @@ macro codebank(bank)
     if defined("CURRENT_BANK")
         !{ROM_LOCATION_!CURRENT_BANK} #= pc()
 
+        if not(!EXROM)
+            !{ROM_LOCATION_!CURRENT_BANK} #= !{ROM_LOCATION_!CURRENT_BANK}&$7FFFFF
+        endif
+
         ; THIS CODE IS COMPLETELY UNTESTED!!!
         if not(!LOROM) && !{CURRENT_BANK}&$40 != 0 \
-            && !{ROM_LOCATION_!CURRENT_BANK}&$FFFF > $8000
+            && offs(!{ROM_LOCATION_!CURRENT_BANK}) > $8000
             ; Check if the ROM's overflowed
             !MIRROR_BANK #= !{CURRENT_BANK}&$BF
             if defined("ROM_LOCATION_!{MIRROR_BANK}")
@@ -48,6 +63,7 @@ macro codebank(bank)
     !CURRENT_BANK #= <bank>
 
     if not(!EXROM)
+        !{CURRENT_ROMSPEED} #= (!{CURRENT_BANK}&$80)<<16
         !{CURRENT_BANK} #= !{CURRENT_BANK}&$7F
     endif
     
@@ -57,11 +73,11 @@ macro codebank(bank)
         if !CURRENT_BANK&$40 == 0 || !LOROM    ; If bank has ROM mirrors
             !{ROM_LOCATION_!CURRENT_BANK} #= !{ROM_LOCATION_!CURRENT_BANK}|$8000
         endif
-    elseif not(!LOROM) && !{ROM_LOCATION_!CURRENT_BANK}&$FFFF >= $8000
+    elseif not(!LOROM) && offs(!{ROM_LOCATION_!CURRENT_BANK}) >= $8000
         !{CURRENT_BANK} #= !{CURRENT_BANK}&$BF  ; If HiROM bank overflowed w/ no consequence, un$40 the bank
     endif
 
     ; Finally, switch
-    org !{ROM_LOCATION_!CURRENT_BANK}
-    bank !{CURRENT_BANK}
+    org !{ROM_LOCATION_!CURRENT_BANK}|!{CURRENT_ROMSPEED}
+    bank !{CURRENT_BANK}|bank(!{CURRENT_ROMSPEED})
 endmacro

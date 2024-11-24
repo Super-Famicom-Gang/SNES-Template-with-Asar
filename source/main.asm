@@ -14,7 +14,7 @@ EMU_COP_Routine:
 NAT_NMI_Routine:
 EMU_NMI_Routine:
 	JML	.fastROM		;
-	org $800000|pc()	;	Move to FastROM
+	%codebank($80)		;	Move to FastROM
 	.fastROM:			;__
 	PHA	;
 	PHX	;	Save regs
@@ -31,6 +31,7 @@ EMU_NMI_Routine:
 	PLA	;__
 	RTI
 
+%codebank(0)
 NAT_IRQ_Routine:
 EMU_IRQ_Routine:
 	RTI
