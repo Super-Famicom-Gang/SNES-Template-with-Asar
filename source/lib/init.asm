@@ -14,7 +14,7 @@ incsrc "macros.asm"
 optimize dp always
 optimize address mirrors
 
-!INIT_USE_FASTROM ?= !HEADER_MAPMODE
+!INIT_USE_FASTROM ?= !HEADER_ROMSPEED
 
 if !INIT_USE_FASTROM
 %codebank(128)
@@ -23,26 +23,24 @@ else
 endif
 _InitSNES:
 	.Start:
-		PHK			;set Data Bank = Program Bank
-		PLB
+		PHK			;	Set Data Bank = Program Bank
+		PLB			;__
 
-		SEP #$10	; mem/A = 16 bit, idx/XY = 8 bit
+		SEP #$10	;__	A = 16 bit, idx/XY = 8 bit
 
-		PLA			;we clear all the mem at one point ...
-		STA $4372  	;so save the return address in a place that won't get overwritten
-		PLX			;(that place is DMA registers)
-		STX $4374
+		PLA			;	We clear all the mem at one point
+		STA $4372	;	So save the return address in a 
+		PLX			;	place that won't get overwritten
+		STX $4374	;__	(that place is DMA registers)
 
-		SEP #$30	; mem/A = 8 bit, idx/XY = 8 bit
+		SEP #$30	;__	A = 8 bit, idx/XY = 8 bit
 		
 		JSR SetRegisters
 		JSR ClearVRAM
 		JSR ClearPalette
 		JSR ClearOAM
 
-	.ClearWRAM:
-		;**** clear WRAM ********
-		
+	.ClearWRAM:		
 		!WRAM_FILL_BYTE = (..WRAMFillInstr+1)
 		; The instruction is LDX #$0000, assembles as
 		; $A2 $00 $00, the second byte of that
@@ -50,75 +48,85 @@ _InitSNES:
 
 		REP #$10		; idx/XY = 16 bit
 
-		STX WMADDL		; (X is 0 after the loop)
-		STZ WMADDH		;set WRAM address to $000000
+		; It's not worth it to set the DP to $4300
 
-		; it is not worth it to set the DP to $4300
-
-		LDX #$8008
-		STX $4300		;Set DMA mode to fixed source, BYTE to $2180
+		LDX #$8008		;	Set DMA mode to fixed source, addr to $2180
+		STX DMAP0		;__
 		LDX #!WRAM_FILL_BYTE
-		STX $4302		;Set source offset
+		STX A1T0L		;__	Set source offset
 		LDA.b #bank(!WRAM_FILL_BYTE)
-		STA $4304		;Set source bank
-	#..WRAMFillInstr:	LDX #$0000
-		PHX				; Push to return to DP $0000 later on	
-		STX $4305		;Set transfer size to 64k bytes
-		LDA.b #$01
-		STA $420B		;Initiate transfer
-		STA $420B		;Initiate second transfer for 64k more bytes
+		STA A1B0		;__	Set source bank
+	#..WRAMFillInstr:
+		LDX #$0000		;	Push to return to DP $0000 later on	
+		PHX				;__
+		STX DAS0L		;__	Set transfer size to 64KiB
+		STX WMADDL		;	Set WRAM address to $000000
+		STZ WMADDH		;__
+		LDA.b #$01		;
+		STA MDMAEN		;__	Initiate transfer
+		STA MDMAEN		;__	Initiate second transfer for another 64KiB
+	
+	.Finish:
 
-		PHK			;make sure Data Bank = Program Bank
-		PLB
+		PHK				;	Make sure Data Bank = Program Bank
+		PLB				;__
 
-		PLD			;DP = $0000 from the PHX
-		dpbase $0000	; tell Asar to optimize the following everything
+		PLD				;	DP = $0000 from the PHX
+		dpbase $0000	;__	Tell Asar to optimize the following everything
 
-		CLI			;enable interrupts again
+		CLI				;__	Enable interrupts again
 
-		LDA $4374  	;get our return address...
+		LDA $4374		;
 		if !INIT_USE_FASTROM
-			ORA #$80	; Force FastROM
-		endif
-		PHA
-		LDX $4372
-		PHX
+			ORA #$80	;__	Force FastROM
+		endif			;
+		PHA				;	Get our return address back
+		LDX $4372		;
+		PHX				;__
 		RTL
 
 ;----------------------------------------------------------------------------
 ; ClearVRAM -- Sets every byte of VRAM to zero
 ; In: None
 ; Out: None
-; Modifies: Nothing
+; Modifies: DMA channel 0
 ;----------------------------------------------------------------------------
 ClearVRAM:
-	pha
-	phx
-	php
+	PHA
+	PHX
+	PHP
 
-	REP #$30		; mem/A = 8 bit, X/Y = 16 bit
-	SEP #$20
+	REP #$10		;	X/Y = 16 bit
+	SEP #$20		;__	A = 8 bit
 
-	LDA #$80
-	STA VMAIN         ;Set VRAM port to word access
-	LDX #$1809
-	STX $4300         ;Set DMA mode to fixed source, WORD to $2118/9
-	LDX #$0000
-	STX VMADDL        ;Set VRAM port address to $0000
-	STX $00        ;Set $00:0000 to $0000 (assumes scratchpad ram)
-	STX $4302         ;Set source address to $xx:0000
-	LDA #$00
-	STA $4304         ;Set source bank to $00
-	LDX #$FFFF
-	STX $4305         ;Set transfer size to 64k-1 bytes
-	LDA #$01
-	STA $420B         ;Initiate transfer
+	!WRAM_FILL_BYTE = (.WRAMFillInstr+1)
+	; The instruction is LDX #$0000, assembles as
+	; $A2 $00 $00, the second byte of that
+	; is a consistent 0 we can use
 
-	STZ $2119         ;clear the last byte of the VRAM
 
-	plp
-	plx
-	pla
+	LDA #$80		;	Set VRAM port to word access
+	STA VMAIN		;__
+	LDX #$1809		;	Set DMA mode to fixed source, addr to $2118/9
+	STX DMAP0		;__
+	#.WRAMFillInstr:
+		LDX #$0000	;	Set VRAM port address to $0000
+	STX VMADDL		;__
+	; DEX	; X = #$FFFF;	Set transfer size to 64KiB-1
+	STX DAS0L		;__
+	LDX #!WRAM_FILL_BYTE
+	STX A1T0L		;__	Set source offset
+	LDA.b #bank(!WRAM_FILL_BYTE)
+	STA A1B0		;__	Set source bank
+	LDA #$01		;	Initiate transfer
+	STA MDMAEN		;__
+
+	; STZ $2119		;__	DISPUTED TO BE USELESS clear the last byte of the VRAM
+
+	PLP
+	PLX
+	PLA
+
 	RTS
 
 ;----------------------------------------------------------------------------
@@ -131,12 +139,12 @@ ClearPalette:
 	PHX
 	PHP
 	PHD
-	REP #$10		; X/Y = 16 bit
-	SEP #$20		; mem/A = 8 bit
+	REP #$10		;	X/Y = 16 bit
+	SEP #$20		;__	A = 8 bit
 
-	PEA $2100		; set DP to $2100
-	PLD				; for faster access
-	dpbase $2100	; tell Asar that
+	PEA $2100		;	Set DP to $2100
+	PLD				;	For faster access
+	dpbase $2100	;__	And tell Asar that
 
 	STZ CGADD
 	LDX #$0100
@@ -162,36 +170,39 @@ ClearPalette:
 ClearOAM:
 	PHA
 	PHX
+	PHY
 	PHP
 	PHD
 
-	REP #$10		; idx/XY = 16 bit
+	SEP #$30		;__	X/Y, A = 8 bit
 
-	PEA $2100		; set DP to $2100
-	PLD				; for faster access
-	dpbase $2100	; tell Asar that
 
-	STZ OAMADDL	;sprites initialized to be off the screen, palette 0, character 0
-	STZ OAMADDH
-	LDX.w #$80
-	LDA #$01
-	.Loop08:
-		STA OAMDATA	;set X = 1 (-255 really because of the next loop)
-		STZ OAMDATA	;set Y = 0
-		STZ OAMDATA	;set character = $00
-		STZ OAMDATA	;set priority=0, no flips
+	PEA $2100		;	Set DP to $2100
+	PLD				;	For faster access
+	dpbase $2100	;__	And tell Asar that
+
+	STZ OAMADDL		;	Set address to 0
+	STZ OAMADDH		;__
+	LDX #$80		;__	We have 128 sprites
+	LDA #$01		;__	X = 1
+	.LoopLow:
+		STA OAMDATA	;__	X = 1 (-255 really because of the next loop)
+		STZ OAMDATA	;__	Y = 0
+		STZ OAMDATA	;__	Tile = $00
+		STZ OAMDATA	;__	Priority=0; No flips
 		DEX
-		BNE .Loop08
+		BNE .LoopLow
 
-	LDX.w #$20
-	LDA #%01010101
-	.Loop09:
-		STA OAMDATA		;set size bit=0, x MSB = 1
+	LDX #$20		;__	128 sprites / 4 sprites per byte
+	LDA #%01010101	;__	Size = 0, MSB of X = 1 (thus making X = -255)
+	.LoopHigh:
+		STA OAMDATA
 		DEX
-		BNE .Loop09
+		BNE .LoopHigh
 
 	PLD
 	PLP
+	PLY
 	PLX
 	PLA
 	RTS
@@ -210,9 +221,9 @@ SetRegisters:
 	PHY
 	PHP
 
-	PEA $2100	;set Direct Page = $2100 for easier writes to VRAM registers
-	PLD			;Transfer Accumulator to Direct Register
-	dpbase $2100	; tell Asar to optimize the following everything
+	PEA $2100		;	Set Direct Page = $2100
+	PLD				;	for easier writes to VRAM registers
+	dpbase $2100	;__	And tell Asar that
 
 	SEP #$30	; mem/A = 8 bit, idx/XY = 8 bit
 
@@ -256,7 +267,7 @@ SetRegisters:
 	STZ M7D
 	STA M7D
 
-	LDX #1
+	TAX	; X = 1
 	.Mode7BCXYLoop:		;regs $211B-$2120
 		STZ M7B,X		;clear out the Mode7 matrix values
 		STZ M7B,X
@@ -350,21 +361,20 @@ SetRegisters:
 ;----------------------------------------------------------------------------
 
 macro InitSNES()
-	SEI                     ;disable interrupts
-	CLC                     ;switch to native mode
-	XCE
+	SEI				;__	Disable interrupts
+	CLC				;	Switch to native mode
+	XCE				;__
 
-	REP #$38		; mem/A = 16 bit, X/Y = 16 bit, decimal mode off
+	REP #$38		;__	A = 16 bit, X/Y = 16 bit, decimal mode off
 
-	LDX #$1FFF	;Setup the stack
-	TXS			;Transfer Index X to Stack Pointer Register
+	LDX #$1FFF		;	Set up the stack
+	TXS				;__
 
 	if !INIT_USE_FASTROM
-		STX $420D	; 420E doesn't exist, we don't affect anything
+		STX MEMSEL	;__	Force fastrom (420E doesn't exist, we don't affect anything)
 	endif
 
-	;do the rest of the initialization in a routine
-	JSL _InitSNES
+	JSL _InitSNES	;__	Do the rest of the initialization in a routine
 
-	SEP #$20		; mem/A = 8 bit
+	SEP #$20		;__	A = 8 bit
 endmacro
