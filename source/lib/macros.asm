@@ -62,6 +62,13 @@ macro codebank(bank)
 
     !CURRENT_BANK #= <bank>
 
+    if <bank> == $7E || <bank> == $7F
+        print "======="
+        print "Are you tryna write to ROM at the location of RAM?"
+        print "That's a very nice attempt but i'll stuff you in a pram"
+        print "======="
+    endif
+
     if not(!EXROM)
         !{CURRENT_ROMSPEED} #= (!{CURRENT_BANK}&$80)<<16
         !{CURRENT_BANK} #= !{CURRENT_BANK}&$7F
