@@ -18,6 +18,7 @@ macro allocateRAM(page, ...)
 
     !__allocateRAM_page #= <page>
     !__allocateRAM_RAM_LOCATION = "RAM_LOCATION_!__allocateRAM_page"
+    !__allocateRAM_boundCheck = 1
 	if not(defined("!__allocateRAM_RAM_LOCATION"))
 		!{!__allocateRAM_RAM_LOCATION} #= $7E0000+(<page>*$100)
     endif
@@ -25,17 +26,26 @@ macro allocateRAM(page, ...)
 
     ; Actually put the data
     !__allocateRAM_cnt #= 0
+    ; Accept arguments
+    if stringsequal("<...[!__allocateRAM_cnt]>", "noBoundCheck=1")
+        !__allocateRAM_boundCheck = 0
+        !__allocateRAM_cnt #= !__allocateRAM_cnt+1
+    endif
+
     while !__allocateRAM_cnt < sizeof(...)
 		<...[!__allocateRAM_cnt]>: skip <...[!__allocateRAM_cnt+1]>
 		!__allocateRAM_cnt #= !__allocateRAM_cnt+2
 	endwhile
 
 	!{!__allocateRAM_RAM_LOCATION} #= pc()
-	if !{!__allocateRAM_RAM_LOCATION} > $7E0000+((<page>+1)*$100)
-		warn "Page <page> of RAM is full"
-    elseif !{!__allocateRAM_RAM_LOCATION} == $7E0000+((<page>+1)*$100)
-        print "Page <page> of RAM has been filled"
-	endif
+
+    if !__allocateRAM_boundCheck
+    	if !{!__allocateRAM_RAM_LOCATION} > $7E0000+((<page>+1)*$100)
+    		warn "Page <page> of RAM has overflowed"
+        elseif !{!__allocateRAM_RAM_LOCATION} == $7E0000+((<page>+1)*$100)
+            print "Page <page> of RAM has been filled"
+    	endif
+    endif
     if !{!__allocateRAM_RAM_LOCATION} >= $7E0000+(((<page>&$100)+$100)*$100)
         error "Page <page> of RAM has crossed the bank boundary into" $hex(!{!__allocateRAM_RAM_LOCATION}, 6)
     endif
