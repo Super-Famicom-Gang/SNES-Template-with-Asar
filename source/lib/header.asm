@@ -1,5 +1,6 @@
 ;==== FRIENDLY HEADER BY alexmush ====;
 ; Game Title, encoded in JIS X 0201
+; Since Asar 1.9 only supports ASCII, only use ASCII or use raw bytes
 ; Must be 21 or less characters long
 ; (This script pads the string to 21 bytes automatically)
 !HEADER_GAMETITLE = "                     "
