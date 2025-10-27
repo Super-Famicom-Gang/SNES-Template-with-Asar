@@ -48,7 +48,9 @@ macro allocateRAM(page, ...)
 
 	; Actually put the data
 	while !__allocateRAM_cnt < sizeof(...)
-		<...[!__allocateRAM_cnt]>: skip <...[!__allocateRAM_cnt+1]>
+		<...[!__allocateRAM_cnt]> = pc()
+		skip <...[!__allocateRAM_cnt+1]>
+		!<...[!__allocateRAM_cnt]>_size #= <...[!__allocateRAM_cnt+1]>
 		!__allocateRAM_cnt #= !__allocateRAM_cnt+2
 	endwhile
 
