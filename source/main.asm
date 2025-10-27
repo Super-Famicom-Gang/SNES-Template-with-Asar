@@ -1,10 +1,4 @@
 incsrc "init.asm"
-; RAM allocation can happen anywhere
-; Generic cc65-style tmp vars
-%allocateRAM(0, tmp1, 1, tmp2, 1, tmp3, 1, tmp4, 1)
-%allocateRAM(0, ptr1, 2, ptr2, 2, ptr3, 2, ptr4, 2)
-
-%allocateRAM($1C0, boundCheck, 0, ==, dmaBuffer, $200)
 
 %codebank(0)
 

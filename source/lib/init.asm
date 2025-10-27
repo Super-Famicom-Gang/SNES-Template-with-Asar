@@ -10,6 +10,7 @@ asar 1.90
 incsrc "header.asm"
 incsrc "regs.asm"
 incsrc "macros.asm"
+incsrc "baseLibMem.asm"
 
 optimize dp always
 optimize address mirrors
